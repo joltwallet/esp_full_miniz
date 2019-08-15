@@ -12,7 +12,7 @@ COMPONENT_ADD_LDFLAGS = -Wl,--whole-archive -l$(COMPONENT_NAME) -Wl,--no-whole-a
 ```
 
 * miniz without ROM: 7036 Bytes
-* miniz with ROM (this repo): 938 Bytes 
+* miniz with ROM (this repo): 930 Bytes 
 
 # Usage
 
