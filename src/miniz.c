@@ -222,7 +222,7 @@ int mz_inflateInit2(mz_streamp pStream, int window_bits)
 {
   inflate_state *pDecomp;
   if (!pStream) return MZ_STREAM_ERROR;
-  if ((window_bits != MZ_DEFAULT_WINDOW_BITS) && (-window_bits != MZ_DEFAULT_WINDOW_BITS)) return MZ_PARAM_ERROR;
+  //if ((window_bits != MZ_DEFAULT_WINDOW_BITS) && (-window_bits != MZ_DEFAULT_WINDOW_BITS)) return MZ_PARAM_ERROR;
 
   pStream->data_type = 0;
   pStream->adler = 0;
