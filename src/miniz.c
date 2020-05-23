@@ -213,8 +213,9 @@ mz_ulong mz_compressBound(mz_ulong source_len)
 typedef struct
 {
   tinfl_decompressor m_decomp;
-  mz_uint m_dict_ofs, m_dict_avail, m_first_call, m_has_flushed; int m_window_bits;
-  mz_uint8 m_dict[TINFL_LZ_DICT_SIZE];
+  mz_uint m_dict_ofs, m_dict_avail, m_first_call, m_has_flushed; 
+  int m_window_bits;
+  mz_uint8 *m_dict;
   tinfl_status m_last_status;
 } inflate_state;
 
@@ -233,8 +234,15 @@ int mz_inflateInit2(mz_streamp pStream, int window_bits)
   if (!pStream->zalloc) pStream->zalloc = def_alloc_func;
   if (!pStream->zfree) pStream->zfree = def_free_func;
 
+  printf("Attempting to allocate %d bytes\n", (int)sizeof(inflate_state));
   pDecomp = (inflate_state*)pStream->zalloc(pStream->opaque, 1, sizeof(inflate_state));
   if (!pDecomp) return MZ_MEM_ERROR;
+
+  pDecomp->m_dict = pStream->zalloc(pStream->opaque, 1, 1<<window_bits);
+  if (!pDecomp->m_dict) {
+      pStream->zfree(pStream->opaque, pDecomp);
+      return MZ_MEM_ERROR;
+  }
 
   pStream->state = (struct mz_internal_state *)pDecomp;
 
@@ -303,14 +311,14 @@ int mz_inflate(mz_streamp pStream, int flush)
     n = MZ_MIN(pState->m_dict_avail, pStream->avail_out);
     memcpy(pStream->next_out, pState->m_dict + pState->m_dict_ofs, n);
     pStream->next_out += n; pStream->avail_out -= n; pStream->total_out += n;
-    pState->m_dict_avail -= n; pState->m_dict_ofs = (pState->m_dict_ofs + n) & (TINFL_LZ_DICT_SIZE - 1);
+    pState->m_dict_avail -= n; pState->m_dict_ofs = (pState->m_dict_ofs + n) & ((1 << pState->m_window_bits) - 1);
     return ((pState->m_last_status == TINFL_STATUS_DONE) && (!pState->m_dict_avail)) ? MZ_STREAM_END : MZ_OK;
   }
 
   for ( ; ; )
   {
     in_bytes = pStream->avail_in;
-    out_bytes = TINFL_LZ_DICT_SIZE - pState->m_dict_ofs;
+    out_bytes = (1 << pState->m_window_bits) - pState->m_dict_ofs;
 
     status = tinfl_decompress(&pState->m_decomp, pStream->next_in, &in_bytes, pState->m_dict, pState->m_dict + pState->m_dict_ofs, &out_bytes, decomp_flags);
     pState->m_last_status = status;
@@ -323,7 +331,7 @@ int mz_inflate(mz_streamp pStream, int flush)
     n = MZ_MIN(pState->m_dict_avail, pStream->avail_out);
     memcpy(pStream->next_out, pState->m_dict + pState->m_dict_ofs, n);
     pStream->next_out += n; pStream->avail_out -= n; pStream->total_out += n;
-    pState->m_dict_avail -= n; pState->m_dict_ofs = (pState->m_dict_ofs + n) & (TINFL_LZ_DICT_SIZE - 1);
+    pState->m_dict_avail -= n; pState->m_dict_ofs = (pState->m_dict_ofs + n) & ((1 << pState->m_window_bits) - 1);
 
     if (status < 0)
        return MZ_DATA_ERROR; // Stream is corrupted (there could be some uncompressed data left in the output dictionary - oh well).
@@ -351,6 +359,7 @@ int mz_inflateEnd(mz_streamp pStream)
     return MZ_STREAM_ERROR;
   if (pStream->state)
   {
+    pStream->zfree(pStream->opaque, ((inflate_state*)pStream->state)->m_dict);
     pStream->zfree(pStream->opaque, pStream->state);
     pStream->state = NULL;
   }
