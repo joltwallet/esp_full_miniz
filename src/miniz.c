@@ -234,7 +234,6 @@ int mz_inflateInit2(mz_streamp pStream, int window_bits)
   if (!pStream->zalloc) pStream->zalloc = def_alloc_func;
   if (!pStream->zfree) pStream->zfree = def_free_func;
 
-  printf("Attempting to allocate %d bytes\n", (int)sizeof(inflate_state));
   pDecomp = (inflate_state*)pStream->zalloc(pStream->opaque, 1, sizeof(inflate_state));
   if (!pDecomp) return MZ_MEM_ERROR;
 
