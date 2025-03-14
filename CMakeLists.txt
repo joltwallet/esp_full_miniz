@@ -3,5 +3,7 @@ idf_component_register(
             "src/miniz.c"
         INCLUDE_DIRS
             "include"
+        PRIV_REQUIRES
+        	esp_rom
 )
 
