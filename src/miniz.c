@@ -1,5 +1,5 @@
-#include "miniz.h"
-#include "esp32/rom/miniz.h"
+#include "full_miniz.h"
+#include "miniz.h" //located in /components/esp_rom/include/miniz.h
 
 // ------------------- End of Header: Implementation follows. (If you only want the header, define MINIZ_HEADER_FILE_ONLY.)
 
